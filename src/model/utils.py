@@ -28,7 +28,9 @@ def init_optimizer(model, learning_rate, warmup_proportion, num_train_epochs,
     param_optimizer = list(model.named_parameters())
     no_decay = ['bias', 'gamma', 'beta']
     # size of MB:2014 - 4179
-    num_train_steps = 41579 / batch_size * num_train_epochs
+    # num_train_steps = 41579 / batch_size * num_train_epochs
+    num_train_steps = 62089 / batch_size * num_train_epochs    
+    
     optimizer_grouped_parameters = [
         {'params': [p for n, p in param_optimizer if n not in no_decay],
          'weight_decay_rate': 0.01},

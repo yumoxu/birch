@@ -7,7 +7,7 @@ import torch
 
 from eval_bert import eval_bm25, load_bert_scores, calc_q_doc_bert
 from model.train import train
-from model.test import test
+from model.test import test, check_dev_performance
 from model.utils import print_scores
 from args import get_args
 from query import query_sents, visualize_scores
@@ -35,6 +35,10 @@ def main():
 
     if args.mode == 'training':
         train(args)
+
+    elif args.mode == 'check_performance':
+        check_dev_performance(args)
+
     elif args.mode == 'inference':
         scores = test(args)
         print_scores(scores)

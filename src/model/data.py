@@ -21,6 +21,9 @@ class DataGenerator(object):
             self.fb = open(os.path.join(data_path, '{}/{}/b.toks'.format(collection, split)))
             self.fsim = open(os.path.join(data_path, '{}/{}/sim.txt'.format(collection, split)))
             self.fid = open(os.path.join(data_path, '{}/{}/id.txt'.format(collection, split)))
+        elif 'qa' in collection:
+            self.f = open(os.path.join(data_path, '{}/{}.csv'.format(collection, split)))
+            # self.f.readline()  # skip headline
         else:
             self.f = open(os.path.join(data_path, 'datasets', '{}.csv'.format(collection)))
 
@@ -30,6 +33,10 @@ class DataGenerator(object):
                 return sim.replace('\n', ''), a.replace('\n', ''), \
                        b.replace('\n', ''), ID.replace('\n', '')
             return None, None, None, None
+        elif self.collection == 'qa':
+            for l in self.f:
+                return l.replace('\n', '').split('\t')  # sim, qid, docid, a, b
+            return None, None, None, None, None  
         else:
             for l in self.f:
                 return l.replace('\n', '').split('\t')
@@ -42,7 +49,20 @@ def load_data(data_path, collection, batch_size, tokenizer, split='train', devic
     while True:
         dataGenerator = DataGenerator(data_path, collection, split)
         while True:
-            label, a, b, ID = dataGenerator.get_instance()
+            if collection == 'mb':
+                label, a, b, ID = dataGenerator.get_instance()
+                qid, _, docid, _, _, _ = ID.split()
+                qid = int(qid)
+                docid = int(docid)
+
+            elif collection == 'qa':
+                label, qid, docid, a, b = dataGenerator.get_instance()
+                # qid = float(qid)  # trec qid is in the format of '1.3'
+                # docid = int(qid)
+            
+            else:
+                raise ValueError('Invalid collection: {}'.format(collection))
+
             if label is None:
                 break
 
@@ -59,24 +79,24 @@ def load_data(data_path, collection, batch_size, tokenizer, split='train', devic
             testqid_batch.append(torch.tensor(segments_ids))
             mask_batch.append(torch.ones(len(combine_index)))
             label_batch.append(int(label))
-            qid, _, docid, _, _, _ = ID.split()
-
-            qid = int(qid)
-            docid = int(docid)
-
+            
             qid_batch.append(qid)
             docid_batch.append(docid)
+            
             if len(test_batch) >= batch_size:
                 # Convert inputs to PyTorch tensors
                 tokens_tensor = torch.nn.utils.rnn.pad_sequence(test_batch, batch_first=True, padding_value=0).to(device)
                 segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(device)
                 mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
                 label_tensor = torch.tensor(label_batch, device=device)
-                qid_tensor = torch.tensor(qid_batch, device=device)
-                docid_tensor = torch.tensor(docid_batch, device=device)
-                data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
+                # qid_tensor = torch.tensor(qid_batch, device=device)
+                # docid_tensor = torch.tensor(docid_batch, device=device)
+                # data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                
+                batch = (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_batch, docid_batch)
                 test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []
-                yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                # yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+                yield batch
 
         if len(test_batch) != 0:
             # Convert inputs to PyTorch tensors
@@ -84,11 +104,14 @@ def load_data(data_path, collection, batch_size, tokenizer, split='train', devic
             segments_tensor = torch.nn.utils.rnn.pad_sequence(testqid_batch, batch_first=True, padding_value=0).to(device)
             mask_tensor = torch.nn.utils.rnn.pad_sequence(mask_batch, batch_first=True, padding_value=0).to(device)
             label_tensor = torch.tensor(label_batch, device=device)
-            qid_tensor = torch.tensor(qid_batch, device=device)
-            docid_tensor = torch.tensor(docid_batch, device=device)
-            data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
-            test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docqid_batch = [], [], [], [], [], []
-            yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+            # qid_tensor = torch.tensor(qid_batch, device=device)
+            # docid_tensor = torch.tensor(docid_batch, device=device)
+            # data_set.append((tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor))
+            
+            batch = (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_batch, docid_batch)
+            test_batch, testqid_batch, mask_batch, label_batch, qid_batch, docid_batch = [], [], [], [], [], []  # docqid_batch -> docid_batch
+            # yield (tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor)
+            yield batch
 
         yield None
 

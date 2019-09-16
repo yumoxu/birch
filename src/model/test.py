@@ -7,11 +7,15 @@ from .utils import print_scores, load_checkpoint, save_checkpoint, load_pretrain
 from .data import load_data, load_trec_data
 
 
+def check_dev_performance(args):
+    print(load_checkpoint(args.checkpoint_path)[-1])
+
+
 def eval_select(args, model, tokenizer, best_score, epoch):
     scores_dev = test(args, split='dev', model=model, tokenizer=tokenizer, training_or_lm=True)
     print_scores(scores_dev, mode='dev')
-    scores_test = test(args, split='test', model=model, tokenizer=tokenizer, training_or_lm=True)
-    print_scores(scores_test,  mode='test')
+    # scores_test = test(args, split='test', model=model, tokenizer=tokenizer, training_or_lm=True)
+    # print_scores(scores_test,  mode='test')
 
     if scores_dev[1][0] > best_score:
         best_score = scores_dev[1][0]
@@ -53,19 +57,29 @@ def test(args, split='test', model=None, tokenizer=None, training_or_lm=False):
     for batch in test_dataset:
         if batch is None:
             break
-        tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+        # tokens_tensor, segments_tensor, mask_tensor, label_tensor, qid_tensor, docid_tensor = batch
+        tokens_tensor, segments_tensor, mask_tensor, label_tensor, qids, docids = batch
+        # print('tokens tensor shape: {}'.format(tokens_tensor.size()))
         predictions = model(tokens_tensor, segments_tensor, mask_tensor)
+        # print('predictions: {}'.format(predictions))
+
         scores = predictions.cpu().detach().numpy()
         predicted_index = list(torch.argmax(predictions, dim=1).cpu().numpy())
         prediction_index_list += predicted_index
         predicted_score = list(predictions[:, 1].cpu().detach().numpy())
         prediction_score_list.extend(predicted_score)
         labels.extend(list(label_tensor.cpu().detach().numpy()))
-        qids = qid_tensor.cpu().detach().numpy()
-        docids = docid_tensor.cpu().detach().numpy()
+        # qids = qid_tensor.cpu().detach().numpy()
+        # docids = docid_tensor.cpu().detach().numpy()
+        # print('predicted_index: {}'.format(len(predicted_index)))
+        # print('qids: {}'.format(len(qids)))
+        # print('docids: {}'.format(len(docids)))
+        # print('scores: {}'.format(len(scores)))
         for p, qid, docid, s in zip(predicted_index, qids, docids, scores):
             output_file.write('{}\t{}\n'.format(lineno, p))
-            predict_file.write('{} Q0 {} {} {} bert\n'.format(qid, docid, lineno, s[1]))
+            pred_str = '{} Q0 {} {} {} bert\n'.format(qid, docid, lineno, s[1])
+            # print('pred: {}'.format(pred_str))
+            predict_file.write(pred_str)
             lineno += 1
             predict_file.flush()
         del predictions

@@ -3,7 +3,7 @@ from argparse import ArgumentParser
 
 def get_args():
     parser = ArgumentParser(description='birch')
-    parser.add_argument('--mode', default='retrieval', help='[training, inference, retrieval]')
+    parser.add_argument('--mode', default='retrieval', help='[training, check_performance, inference, retrieval]')
     parser.add_argument('--output_path', default='out.tmp', help='Name of log file')
     parser.add_argument('--data_path', default='data')
     parser.add_argument('--qrels_file', default='qrels.robust2004.txt', help='[qrels.microblog.txt, qrels.robust2004.txt]')
@@ -26,7 +26,7 @@ def get_args():
     parser.add_argument('--trec_eval_path', default='eval/trec_eval.9.0.4/trec_eval')
     parser.add_argument('--model_path', default='models/saved.tmp', help='Path to pretrained model')
     parser.add_argument('--predict_path', default='predict.tmp')
-    parser.add_argument('--batch_size', default=32, type=int)
+    parser.add_argument('--batch_size', default=16, type=int)
     parser.add_argument('--learning_rate', default=3e-6, type=float)
     parser.add_argument('--num_train_epochs', default=3, type=int)
     parser.add_argument('--eval_steps', default=-1, type=int, help='Number of evaluation steps, -1 for evaluation per epoch')
@@ -34,6 +34,9 @@ def get_args():
     parser.add_argument('--local_model', default=None, help='[None, path to local model file]')
     parser.add_argument('--local_tokenizer', default=None, help='[None, path to local vocab file]')
     parser.add_argument('--load_trained', action='store_true', default=False, help='Load pretrained model if True')
-
+    
+    # Check Dev Performance
+    parser.add_argument('--checkpoint_path', default='/afs/inf.ed.ac.uk/group/project/material/querysum/model/saved.qa_2', help='Path to pretrained QA checkpoint')
+ 
     args, other = parser.parse_known_args()
     return args, other

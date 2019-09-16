@@ -45,12 +45,12 @@ def train(args):
             optimizer.step()
             model.zero_grad()
 
-            if args.eval_steps > 0 and step % args.eval_steps == 0:
+            if args.eval_steps > 0 and step and step % args.eval_steps == 0:
                 print('\nStep: {}'.format(step))
                 best_score = eval_select(args, model, tokenizer, best_score, epoch)
 
         print('[train] loss: {}'.format(tr_loss))
         best_score = eval_select(args, model, tokenizer, best_score, epoch)
 
-    scores = test(args, split='test')
-    print_scores(scores)
+    # scores = test(args, split='test')
+    # print_scores(scores)
